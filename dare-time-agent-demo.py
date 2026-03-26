@@ -268,12 +268,23 @@ class ManagedAgent:
         try:
             result = await self.agent.execute(question)
             
+            # 如果返回的是字符串，包装成标准格式
+            if isinstance(result, str):
+                return {
+                    "success": True,
+                    "answer": result,
+                    "output": None,
+                    "errors": [],
+                    "metadata": {}
+                }
+            
+            # 如果是 RunResult 对象，正常提取字段
             return {
-                "success": result.success,
-                "answer": result.output_text if hasattr(result, 'output_text') else None,
-                "output": result.output if hasattr(result, 'output') else None,
-                "errors": result.errors if hasattr(result, 'errors') else None,
-                "metadata": result.metadata if hasattr(result, 'metadata') else None
+                "success": getattr(result, 'success', False),
+                "answer": getattr(result, 'output_text', None),
+                "output": getattr(result, 'output', None),
+                "errors": getattr(result, 'errors', []),
+                "metadata": getattr(result, 'metadata', {})
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
