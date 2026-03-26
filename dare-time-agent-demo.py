@@ -267,6 +267,7 @@ class ManagedAgent:
         
         try:
             result = await self.agent.execute(question)
+            print(f"DEBUG: result type={type(result)}, result={result}")
             
             # 如果返回的是字符串，包装成标准格式
             if isinstance(result, str):
@@ -287,6 +288,8 @@ class ManagedAgent:
                 "metadata": getattr(result, 'metadata', {})
             }
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             raise HTTPException(status_code=500, detail=str(e))
 
 
