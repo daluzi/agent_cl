@@ -25,7 +25,7 @@ from dare_framework.agent.builder import DareAgentBuilder
 from dare_framework.model.adapters.openrouter_adapter import OpenRouterModelAdapter
 from dare_framework.tool import ToolResult, RiskLevelName
 from dare_framework.tool.kernel import IToolGateway, ITool
-from dare_framework.tool.types import RunContext
+from dare_framework.tool.types import RunContext, ToolType, CapabilityKind
 from dare_framework.skill._internal.filesystem_skill_loader import FileSystemSkillLoader
 from dare_framework.skill._internal.skill_store import SkillStore
 from dare_framework.skill._internal.search_skill_tool import SearchSkillTool
@@ -56,6 +56,26 @@ class GetCurrentTimeTool(ITool):
     @property
     def risk_level(self) -> RiskLevelName:
         return "read_only"  # 只读操作，风险最低
+    
+    @property
+    def tool_type(self) -> ToolType:
+        return ToolType.ATOMIC  # 单次执行工具
+    
+    @property
+    def capability_kind(self) -> CapabilityKind:
+        return CapabilityKind.TOOL
+    
+    @property
+    def is_work_unit(self) -> bool:
+        return False  # 不是工作单元循环
+    
+    @property
+    def requires_approval(self) -> bool:
+        return False  # 不需要审批
+    
+    @property
+    def timeout_seconds(self) -> int:
+        return 10  # 10秒超时
     
     @property
     def input_schema(self) -> Dict[str, Any]:
