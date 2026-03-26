@@ -205,7 +205,7 @@ class ManagedAgent:
             builder.add_tool_provider(mcp_provider)
         
         # 配置规划器和修复器
-        agent = builder\
+        agent = await builder\
             .with_planner(DefaultPlanner(model))\
             .with_remediator(DefaultRemediator(model))\
             .build()
