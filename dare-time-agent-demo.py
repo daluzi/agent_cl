@@ -266,14 +266,14 @@ class ManagedAgent:
             raise HTTPException(status_code=503, detail="Agent not initialized")
         
         try:
-            result = await self.agent.run(question)
+            result = await self.agent.execute(question)
             
             return {
                 "success": result.success,
-                "answer": result.output_text,
-                "output": result.output,
-                "errors": result.errors,
-                "metadata": result.metadata
+                "answer": result.output_text if hasattr(result, 'output_text') else None,
+                "output": result.output if hasattr(result, 'output') else None,
+                "errors": result.errors if hasattr(result, 'errors') else None,
+                "metadata": result.metadata if hasattr(result, 'metadata') else None
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
