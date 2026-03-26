@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from dare_framework.agent import DareAgentBuilder
 from dare_framework.model import OpenRouterModelAdapter
-from dare_framework.tool import IToolGateway, ToolResult, RiskLevel
+from dare_framework.tool import IToolGateway, ToolResult, RiskLevelName
 from dare_framework.core.tool import ITool
 from dare_framework.core.context import ExecutionContext
 from dare_framework.skill import FileSystemSkillLoader, SkillStore, SearchSkillTool
@@ -46,8 +46,8 @@ class GetCurrentTimeTool(ITool):
         return "获取当前的系统时间，支持指定时区"
     
     @property
-    def risk_level(self) -> RiskLevel:
-        return RiskLevel.READ_ONLY  # 只读操作，风险最低
+    def risk_level(self) -> RiskLevelName:
+        return "read_only"  # 只读操作，风险最低
     
     @property
     def input_schema(self) -> Dict[str, Any]:
