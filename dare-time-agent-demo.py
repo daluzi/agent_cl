@@ -6,9 +6,13 @@ DARE Framework 服务化 Agent Demo
 3. 服务化部署，暴露 HTTP 接口
 """
 
+import sys
+import os
+# 添加 DARE Framework 根目录到 Python 路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "Deterministic-Agent-Runtime-Engine-main"))
+
 import asyncio
 import json
-import os
 from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
 from contextlib import asynccontextmanager
@@ -19,16 +23,16 @@ from pydantic import BaseModel
 
 from dare_framework.agent.builder import DareAgentBuilder
 from dare_framework.model.adapters.openrouter_adapter import OpenRouterModelAdapter
-from dare_framework.tool import IToolGateway, ToolResult, RiskLevelName
-from dare_framework.tool.kernel import ITool
-from dare_framework.context.types import ExecutionContext
+from dare_framework.tool import ToolResult, RiskLevelName
+from dare_framework.tool.kernel import IToolGateway, ITool
+from dare_framework.tool.types import RunContext
 from dare_framework.skill._internal.filesystem_skill_loader import FileSystemSkillLoader
 from dare_framework.skill._internal.skill_store import SkillStore
 from dare_framework.skill._internal.search_skill_tool import SearchSkillTool
 from dare_framework.mcp.loader import load_mcp_configs
-from dare_framework.mcp.client import create_mcp_clients
-from dare_framework.mcp.tool_provider import MCPToolProvider
-from dare_framework.memory.factory import create_short_term_memory, create_long_term_memory
+from dare_framework.mcp.factory import create_mcp_clients
+from dare_framework.mcp.tool_provider import McpToolManager
+from dare_framework.memory import InMemorySTM, create_long_term_memory
 from dare_framework.plan._internal.default_planner import DefaultPlanner
 from dare_framework.plan._internal.default_remediator import DefaultRemediator
 
@@ -67,32 +71,32 @@ class GetCurrentTimeTool(ITool):
             "required": []
         }
     
-    async def invoke(self, input_params: Dict[str, Any], context: ExecutionContext) -> ToolResult:
+    async def execute(self, *, run_context: RunContext[Any], timezone: str = "Asia/Shanghai") -> ToolResult:
         try:
-            tz_name = input_params.get("timezone", "Asia/Shanghai")
-            if tz_name == "UTC":
+            if timezone == "UTC":
                 dt = datetime.now(timezone.utc)
             else:
                 from pytz import timezone as pytz_timezone
-                dt = datetime.now(pytz_timezone(tz_name))
+                dt = datetime.now(pytz_timezone(timezone))
             
             result = {
                 "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
                 "timestamp": int(dt.timestamp()),
-                "timezone": tz_name,
+                "timezone": timezone,
                 "isoformat": dt.isoformat()
             }
             
-            return ToolResult(
+            return ToolResult[Dict[str, Any]](
                 success=True,
-                content=f"当前时间: {result['datetime']} ({tz_name})",
-                metadata=result
+                output=result,
+                content=f"当前时间: {result['datetime']} ({timezone})"
             )
         except Exception as e:
-            return ToolResult(
+            return ToolResult[Dict[str, Any]](
                 success=False,
-                content=f"获取时间失败: {str(e)}",
-                error=str(e)
+                output={},
+                error=str(e),
+                content=f"获取时间失败: {str(e)}"
             )
 
 
@@ -136,11 +140,11 @@ class ManagedAgent:
         )
         
         # 2. 初始化记忆
-        stm = create_short_term_memory()
+        stm = InMemorySTM()  # 短内存直接实例化
         ltm = create_long_term_memory({
-            "type": "vector",
+            "type": "rawdata",
             "storage": "in_memory"
-        }, None)  # embedding 可选，这里简化处理
+        }, None)  # 不需要 embedding，使用 rawdata 类型
         
         # 3. 加载 Skills
         self.skill_store = SkillStore()
@@ -164,7 +168,7 @@ class ManagedAgent:
                 user_dir=os.path.expanduser("~")
             )
             self.mcp_clients = create_mcp_clients(configs, connect=True, skip_errors=True)
-            mcp_provider = MCPToolProvider(self.mcp_clients)
+            mcp_provider = McpToolManager(self.mcp_clients)
             print(f"Connected {len(self.mcp_clients)} MCP servers")
         
         # 5. 构建 Agent
