@@ -17,16 +17,20 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from dare_framework.agent import DareAgentBuilder
-from dare_framework.model import OpenRouterModelAdapter
-from dare_framework.tool import IToolGateway, ToolResult, RiskLevelName
-from dare_framework.core.tool import ITool
-from dare_framework.core.context import ExecutionContext
-from dare_framework.skill import FileSystemSkillLoader, SkillStore, SearchSkillTool
-from dare_framework.mcp import load_mcp_configs, create_mcp_clients, MCPToolProvider
-from dare_framework.memory import create_short_term_memory, create_long_term_memory
-from dare_framework.planner import DefaultPlanner
-from dare_framework.remediator import DefaultRemediator
+from dare_framework.agent.builder import DareAgentBuilder
+from dare_framework.model.openrouter import OpenRouterModelAdapter
+from dare_framework.tool.kernel import IToolGateway, ITool
+from dare_framework.tool.types import ToolResult
+from dare_framework.context.types import ExecutionContext
+from dare_framework.skill.loader import FileSystemSkillLoader
+from dare_framework.skill.store import SkillStore
+from dare_framework.skill.tools import SearchSkillTool
+from dare_framework.mcp.config import load_mcp_configs
+from dare_framework.mcp.client import create_mcp_clients
+from dare_framework.mcp.provider import MCPToolProvider
+from dare_framework.memory.factories import create_short_term_memory, create_long_term_memory
+from dare_framework.plan.default_planner import DefaultPlanner
+from dare_framework.remediation.default_remediator import DefaultRemediator
 
 
 # ========== 1. 自定义工具：获取当前时间 ==========
