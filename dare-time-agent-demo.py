@@ -147,17 +147,15 @@ class ManagedAgent:
         }, None)  # 不需要 embedding，使用 rawdata 类型
         
         # 3. 加载 Skills
-        self.skill_store = SkillStore()
         if any(os.path.exists(p.strip()) for p in AgentConfig.SKILL_PATHS):
             loader = FileSystemSkillLoader()
-            all_skills = []
-            for path in AgentConfig.SKILL_PATHS:
-                path = path.strip()
-                if os.path.exists(path):
-                    skills = loader.load([path])
-                    all_skills.extend(skills)
-            self.skill_store.add_skills(all_skills)
+            loaders = [loader]
+            self.skill_store = SkillStore(loaders)
+            all_skills = self.skill_store.list_skills()
             print(f"Loaded {len(all_skills)} skills")
+        else:
+            self.skill_store = SkillStore([])
+            print("No skill paths found, skill store is empty")
         
         # 4. 加载 MCP
         mcp_provider = None
@@ -208,15 +206,8 @@ class ManagedAgent:
     async def reload_skills(self) -> Dict[str, Any]:
         """动态重新加载 Skills"""
         loader = FileSystemSkillLoader()
-        all_skills = []
-        for path in AgentConfig.SKILL_PATHS:
-            path = path.strip()
-            if os.path.exists(path):
-                skills = loader.load([path])
-                all_skills.extend(skills)
-        
-        self.skill_store = SkillStore()
-        self.skill_store.add_skills(all_skills)
+        self.skill_store = SkillStore([loader])
+        all_skills = self.skill_store.list_skills()
         
         # 重新构建 Agent（这里简化处理，实际生产中可以更优雅）
         # 因为工具已经注册，只需要更新 skill store
