@@ -18,19 +18,19 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from dare_framework.agent.builder import DareAgentBuilder
-from dare_framework.model.openrouter import OpenRouterModelAdapter
-from dare_framework.tool.kernel import IToolGateway, ITool
-from dare_framework.tool.types import ToolResult
+from dare_framework.model.adapters.openrouter_adapter import OpenRouterModelAdapter
+from dare_framework.tool import IToolGateway, ToolResult, RiskLevelName
+from dare_framework.tool.kernel import ITool
 from dare_framework.context.types import ExecutionContext
-from dare_framework.skill.loader import FileSystemSkillLoader
-from dare_framework.skill.store import SkillStore
-from dare_framework.skill.tools import SearchSkillTool
-from dare_framework.mcp.config import load_mcp_configs
+from dare_framework.skill._internal.filesystem_skill_loader import FileSystemSkillLoader
+from dare_framework.skill._internal.skill_store import SkillStore
+from dare_framework.skill._internal.search_skill_tool import SearchSkillTool
+from dare_framework.mcp.loader import load_mcp_configs
 from dare_framework.mcp.client import create_mcp_clients
-from dare_framework.mcp.provider import MCPToolProvider
-from dare_framework.memory.factories import create_short_term_memory, create_long_term_memory
-from dare_framework.plan.default_planner import DefaultPlanner
-from dare_framework.remediation.default_remediator import DefaultRemediator
+from dare_framework.mcp.tool_provider import MCPToolProvider
+from dare_framework.memory.factory import create_short_term_memory, create_long_term_memory
+from dare_framework.plan._internal.default_planner import DefaultPlanner
+from dare_framework.plan._internal.default_remediator import DefaultRemediator
 
 
 # ========== 1. 自定义工具：获取当前时间 ==========
