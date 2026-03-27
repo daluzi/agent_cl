@@ -1,0 +1,38 @@
+skill_id: time-faq
+name: 时间常见问题解答
+description: 关于时间和日期的常见问题解答
+version: 1.0.0
+author: daluzi
+content: |
+  # 时间常见问题解答
+
+  ## 1. 时区换算
+  - 北京时区是 **Asia/Shanghai**，即 UTC+8
+  - 比 UTC 标准时间快 **8 小时**
+  - 换算公式：`北京时间 = UTC 时间 + 8 小时`
+
+  ## 2. 如何计算两个日期之间的天数差
+  在 Python 中可以使用 datetime 模块计算：
+  ```python
+  from datetime import date
+  d1 = date(2026, 3, 27)
+  d2 = date(2026, 1, 1)
+  delta = d1 - d2
+  print(delta.days)  # 输出天数差
+  ```
+
+  ## 3. 什么是时间戳？
+  时间戳（timestamp）是从 **1970年1月1日 00:00:00 UTC** 开始计算的秒数。
+  - 优点：与时区无关，全球统一
+  - 用途：存储时间、计算时间差
+
+  ## 4. 什么是闰秒？
+  闰秒是为了协调**协调世界时(UTC)**和**原子时**之间的差异而人为添加的一秒。
+  由于地球自转速度不均匀，需要偶尔调整。
+
+tags:
+  - 时间
+  - 常见问题
+  - FAQ
+metadata:
+  created_at: "2026-03-27"
