@@ -100,12 +100,13 @@ class GetCurrentTimeTool(ITool):
                 from pytz import timezone as pytz_timezone
                 dt = datetime.now(pytz_timezone(timezone))
             
+            datetime_str = dt.strftime("%Y-%m-%d %H:%M:%S")
             result = {
-                "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
+                "datetime": datetime_str,
                 "timestamp": int(dt.timestamp()),
                 "timezone": timezone,
                 "isoformat": dt.isoformat(),
-                "content": f"当前时间: {result['datetime']} ({timezone})"
+                "content": f"当前时间: {datetime_str} ({timezone})"
             }
             
             return ToolResult[Dict[str, Any]](
