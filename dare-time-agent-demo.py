@@ -191,9 +191,6 @@ class ManagedAgent:
             print(f"Connected {len(self.mcp_clients)} MCP servers")
         
         # 5. 构建 Agent
-        from dare_framework.system_prompt.builder import build_system_prompt
-        from dare_framework.agent._internal.defaults import default_system_prompt
-        
         # 添加自定义系统提示词，明确告知可用工具
         custom_instructions = """
 你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识回答。
@@ -207,7 +204,7 @@ class ManagedAgent:
             .with_short_term_memory(stm)\
             .with_long_term_memory(ltm)\
             .add_tools(GetCurrentTimeTool())\
-            .with_system_prompt(custom_instructions)
+            .with_sys_prompt(custom_instructions)
         
         # 添加技能检索工具（如果有技能）
         if self.skill_store and len(self.skill_store.list_skills()) > 0:
