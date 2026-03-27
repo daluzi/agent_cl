@@ -35,6 +35,7 @@ from dare_framework.mcp.tool_provider import McpToolManager
 from dare_framework.memory import InMemorySTM, create_long_term_memory
 from dare_framework.plan._internal.default_planner import DefaultPlanner
 from dare_framework.plan._internal.default_remediator import DefaultRemediator
+from dare_framework.context import Message, MessageKind, MessageRole
 
 
 # ========== 1. 自定义工具：获取当前时间 ==========
@@ -266,7 +267,13 @@ class ManagedAgent:
             raise HTTPException(status_code=503, detail="Agent not initialized")
         
         try:
-            result = await self.agent.execute(question)
+            # 将字符串转换为 Message 对象
+            message = Message(
+                role=MessageRole.USER,
+                kind=MessageKind.CHAT,
+                text=question
+            )
+            result = await self.agent.execute(message)
             print(f"DEBUG: result type={type(result)}, result={result}")
             
             # 如果返回的是字符串，包装成标准格式
