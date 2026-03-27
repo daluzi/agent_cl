@@ -199,12 +199,19 @@ class ManagedAgent:
 - get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
 """
         
+        from dare_framework.model.types import Prompt
+        # 创建自定义提示词
+        custom_prompt = Prompt(
+            id="custom_system",
+            text=custom_instructions
+        )
+        
         builder = DareAgentBuilder("time-service-agent")\
             .with_model(model)\
             .with_short_term_memory(stm)\
             .with_long_term_memory(ltm)\
             .add_tools(GetCurrentTimeTool())\
-            .with_sys_prompt(custom_instructions)
+            .with_prompt(custom_prompt)
         
         # 添加技能检索工具（如果有技能）
         if self.skill_store and len(self.skill_store.list_skills()) > 0:
