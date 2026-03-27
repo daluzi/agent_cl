@@ -193,25 +193,24 @@ class ManagedAgent:
         # 5. 构建 Agent
         # 添加自定义系统提示词，明确告知可用工具
         custom_instructions = """
-你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识回答。
+            你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识回答。
 
-工具能力说明：
-- get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
-"""
+            工具能力说明：
+            - get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
+            """
         
-        from dare_framework.model.types import Prompt
-        # 创建自定义提示词
-        custom_prompt = Prompt(
-            id="custom_system",
-            text=custom_instructions
+        # 配置规划器和修复器，传入自定义指令
+        planner = DefaultPlanner(
+            model,
+            extra_system_instructions=custom_instructions
         )
+        remediator = DefaultRemediator(model)
         
         builder = DareAgentBuilder("time-service-agent")\
             .with_model(model)\
             .with_short_term_memory(stm)\
             .with_long_term_memory(ltm)\
-            .add_tools(GetCurrentTimeTool())\
-            .with_prompt(custom_prompt)
+            .add_tools(GetCurrentTimeTool())
         
         # 添加技能检索工具（如果有技能）
         if self.skill_store and len(self.skill_store.list_skills()) > 0:
@@ -223,8 +222,8 @@ class ManagedAgent:
         
         # 配置规划器和修复器
         agent = await builder\
-            .with_planner(DefaultPlanner(model))\
-            .with_remediator(DefaultRemediator(model))\
+            .with_planner(planner)\
+            .with_remediator(remediator)\
             .build()
         
         self.agent = agent
