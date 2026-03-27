@@ -104,20 +104,20 @@ class GetCurrentTimeTool(ITool):
                 "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
                 "timestamp": int(dt.timestamp()),
                 "timezone": timezone,
-                "isoformat": dt.isoformat()
+                "isoformat": dt.isoformat(),
+                "content": f"当前时间: {result['datetime']} ({timezone})"
             }
             
             return ToolResult[Dict[str, Any]](
                 success=True,
                 output=result,
-                content=f"当前时间: {result['datetime']} ({timezone})"
+                error=None
             )
         except Exception as e:
             return ToolResult[Dict[str, Any]](
                 success=False,
                 output={},
-                error=str(e),
-                content=f"获取时间失败: {str(e)}"
+                error=str(e)
             )
 
 
@@ -191,18 +191,23 @@ class ManagedAgent:
             print(f"Connected {len(self.mcp_clients)} MCP servers")
         
         # 5. 构建 Agent
-        # 添加自定义系统提示词，明确告知可用工具
-        custom_instructions = """
-            你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识回答。
-
-            工具能力说明：
-            - get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
-            """
+        # 获取默认系统提示词并添加自定义指令
+        from dare_framework.plan._internal.default_planner import DEFAULT_PLAN_SYSTEM_PROMPT
         
-        # 配置规划器和修复器，传入自定义指令
+        # 添加自定义提示词，明确告知可用工具
+        custom_system_prompt = DEFAULT_PLAN_SYSTEM_PROMPT + """
+
+额外任务说明：
+你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**通过工具调用让执行层使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识直接回答。
+
+工具能力说明：
+- get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
+"""
+        
+        # 配置规划器和修复器
         planner = DefaultPlanner(
             model,
-            extra_system_instructions=custom_instructions
+            system_prompt=custom_system_prompt
         )
         remediator = DefaultRemediator(model)
         
