@@ -64,6 +64,10 @@ async def test_openai_compatible_api():
         print("="*80)
         print("请求成功!")
         print(f"模型: {response.model}")
+        if hasattr(response, 'model_dump'):
+            print(f"完整响应: {json.dumps(response.model_dump(), indent=2, ensure_ascii=False)}")
+        elif hasattr(response, '__dict__'):
+            print(f"完整响应: {json.dumps(response.__dict__, indent=2, ensure_ascii=False, default=str)}")
         print(f"返回内容:")
         print("-"*80)
         if response.choices and len(response.choices) > 0:
@@ -81,7 +85,23 @@ async def test_openai_compatible_api():
         print("请求失败!")
         print(f"错误类型: {type(e).__name__}")
         print(f"错误信息: {str(e)}")
-        print("\"详细堆栈:")
+        
+        # 尝试获取更详细的错误信息
+        if hasattr(e, 'response'):
+            try:
+                err_response = getattr(e, 'response')
+                print(f"\n响应状态码: {err_response.status_code}")
+                print(f"响应头: {dict(err_response.headers)}")
+                try:
+                    content = err_response.json()
+                    print(f"响应内容: {json.dumps(content, indent=2, ensure_ascii=False)}")
+                except:
+                    content_text = err_response.text
+                    print(f"响应内容: {content_text}")
+            except Exception as de:
+                print(f"读取错误响应详情失败: {de}")
+        
+        print("\n详细堆栈:")
         import traceback
         traceback.print_exc()
         print("="*80)
