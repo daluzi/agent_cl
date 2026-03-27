@@ -122,12 +122,194 @@ class GetCurrentTimeTool(ITool):
             )
 
 
+# ========== 扩展工具1：获取系统信息 ==========
+class GetSystemInfoTool(ITool):
+    """获取当前系统信息工具"""
+    
+    @property
+    def id(self) -> str:
+        return "get_system_info"
+    
+    @property
+    def name(self) -> str:
+        return "get_system_info"
+    
+    @property
+    def description(self) -> str:
+        return "获取当前运行环境的系统信息，包括操作系统、Python版本、CPU、内存使用情况"
+    
+    @property
+    def risk_level(self) -> RiskLevelName:
+        return "read_only"
+    
+    @property
+    def tool_type(self) -> ToolType:
+        return ToolType.ATOMIC
+    
+    @property
+    def capability_kind(self) -> CapabilityKind:
+        return CapabilityKind.TOOL
+    
+    @property
+    def is_work_unit(self) -> bool:
+        return False
+    
+    @property
+    def requires_approval(self) -> bool:
+        return False
+    
+    @property
+    def timeout_seconds(self) -> int:
+        return 10
+    
+    @property
+    def input_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    
+    async def execute(self, *, run_context: RunContext[Any]) -> ToolResult:
+        try:
+            import platform
+            import psutil
+            import sys
+            import os
+            
+            mem = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            
+            result = {
+                "os": platform.system(),
+                "os_release": platform.release(),
+                "python_version": sys.version.split()[0],
+                "cpu_count": psutil.cpu_count(),
+                "cpu_percent": psutil.cpu_percent(interval=0.5),
+                "memory_total_gb": round(mem.total / (1024**3), 2),
+                "memory_used_gb": round(mem.used / (1024**3), 2),
+                "memory_percent": mem.percent,
+                "disk_total_gb": round(disk.total / (1024**3), 2),
+                "disk_used_gb": round(disk.used / (1024**3), 2),
+                "disk_percent": disk.percent,
+                "working_dir": os.getcwd()
+            }
+            
+            return ToolResult[Dict[str, Any]](
+                success=True,
+                output=result
+            )
+        except ImportError as e:
+            return ToolResult[Dict[str, Any]](
+                success=False,
+                output={},
+                error=f"缺少依赖 psutil，请安装: pip install psutil ({str(e)})"
+            )
+        except Exception as e:
+            return ToolResult[Dict[str, Any]](
+                success=False,
+                output={},
+                error=str(e)
+            )
+
+
+# ========== 扩展工具2：计算日期差 ==========
+class CalculateDateDiffTool(ITool):
+    """计算两个日期之间的天数差"""
+    
+    @property
+    def id(self) -> str:
+        return "calculate_date_diff"
+    
+    @property
+    def name(self) -> str:
+        return "calculate_date_diff"
+    
+    @property
+    def description(self) -> str:
+        return "计算两个日期之间相差多少天，格式为 YYYY-MM-DD"
+    
+    @property
+    def risk_level(self) -> RiskLevelName:
+        return "read_only"
+    
+    @property
+    def tool_type(self) -> ToolType:
+        return ToolType.ATOMIC
+    
+    @property
+    def capability_kind(self) -> CapabilityKind:
+        return CapabilityKind.TOOL
+    
+    @property
+    def is_work_unit(self) -> bool:
+        return False
+    
+    @property
+    def requires_approval(self) -> bool:
+        return False
+    
+    @property
+    def timeout_seconds(self) -> int:
+        return 10
+    
+    @property
+    def input_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "date1": {
+                    "type": "string",
+                    "description": "第一个日期，格式 YYYY-MM-DD"
+                },
+                "date2": {
+                    "type": "string",
+                    "description": "第二个日期，格式 YYYY-MM-DD"
+                }
+            },
+            "required": ["date1", "date2"]
+        }
+    
+    async def execute(self, *, run_context: RunContext[Any], date1: str, date2: str) -> ToolResult:
+        try:
+            from datetime import datetime
+            
+            d1 = datetime.strptime(date1, "%Y-%m-%d").date()
+            d2 = datetime.strptime(date2, "%Y-%m-%d").date()
+            delta = abs(d2 - d1)
+            
+            result = {
+                "date1": date1,
+                "date2": date2,
+                "days_diff": delta.days,
+                "description": f"{date1} 和 {date2} 相差 {delta.days} 天"
+            }
+            
+            return ToolResult[Dict[str, Any]](
+                success=True,
+                output=result
+            )
+        except ValueError as e:
+            return ToolResult[Dict[str, Any]](
+                success=False,
+                output={},
+                error=f"日期格式错误，请使用 YYYY-MM-DD 格式: {str(e)}"
+            )
+        except Exception as e:
+            return ToolResult[Dict[str, Any]](
+                success=False,
+                output={},
+                error=str(e)
+            )
+
+
 # ========== 2. 服务配置 ==========
 class AgentConfig:
     """Agent 配置，从环境变量读取"""
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "z-ai/glm-4.7")
     OPENROUTER_BASE_URL: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
     SKILL_PATHS: List[str] = os.getenv("SKILL_PATHS", "./skills").split(",")
     MCP_CONFIG_PATHS: List[str] = os.getenv("MCP_CONFIG_PATHS", "./.dare/mcp").split(",")
     PORT: int = int(os.getenv("PORT", "8000"))
@@ -163,10 +345,32 @@ class ManagedAgent:
         
         # 2. 初始化记忆
         stm = InMemorySTM()  # 短内存直接实例化
-        ltm = create_long_term_memory({
-            "type": "rawdata",
-            "storage": "in_memory"
-        }, None)  # 不需要 embedding，使用 rawdata 类型
+        
+        # 长期记忆 - 支持语义检索，如果没有 embedding 模型也可以继续使用 rawdata
+        # 如果需要向量检索，请确保安装了 sentence-transformers 并配置 embedding_adapter
+        try:
+            from dare_framework.model.adapters.openai_embedding_adapter import OpenAIEmbeddingAdapter
+            # 使用同一个 API 端点提供 embedding 服务
+            embedding_adapter = OpenAIEmbeddingAdapter(
+                api_key=AgentConfig.OPENROUTER_API_KEY,
+                base_url=AgentConfig.OPENROUTER_BASE_URL,
+                model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+            )
+            # 向量长期记忆，持久化存储到本地
+            ltm = create_long_term_memory({
+                "type": "vector",
+                "storage": "chromadb",
+                "collection_name": "dare_time_agent_memory",
+                "persist_directory": "./.ltm_data"
+            }, embedding_adapter)
+            print("Long-term vector memory initialized")
+        except Exception as e:
+            # 如果无法初始化向量存储，回退到简单的 rawdata 存储
+            print(f"Vector memory init failed ({e}), falling back to rawdata in-memory storage")
+            ltm = create_long_term_memory({
+                "type": "rawdata",
+                "storage": "in_memory"
+            }, None)
         
         # 3. 加载 Skills
         if any(os.path.exists(p.strip()) for p in AgentConfig.SKILL_PATHS):
@@ -199,10 +403,23 @@ class ManagedAgent:
         custom_system_prompt = DEFAULT_PLAN_SYSTEM_PROMPT + """
 
 额外任务说明：
-你是一个提供时间查询服务的助手。当用户询问当前时间、日期时，**必须**通过工具调用让执行层使用 get_current_time 工具来获取准确的当前时间，不要凭自己的知识直接回答。
+你是一个提供时间相关服务的助手。
+
+关于工具使用：
+- 当用户询问**当前时间、现在几点**时，**必须**使用 get_current_time 工具获取准确的当前时间，不要凭自己的知识直接回答
+- 当用户询问两个日期相差多少天，**必须**使用 calculate_date_diff 工具计算
+- 当用户询问系统信息、服务器状态，使用 get_system_info 工具
+- 当用户问时间相关的知识问题，使用 search_skill 检索技能库中的常见问题
+- 当用户要求记住某些信息，使用 knowledge_add 存储到长期记忆
+- 当回答需要背景知识，使用 knowledge_get 从长期记忆中检索
 
 工具能力说明：
 - get_current_time: 获取当前系统的准确时间，支持时区参数，默认时区为 Asia/Shanghai
+- calculate_date_diff: 计算两个日期之间相差多少天
+- get_system_info: 获取系统信息（操作系统、CPU、内存、磁盘）
+- search_skill: 在技能库中搜索相关知识
+- knowledge_add: 添加信息到长期记忆
+- knowledge_get: 从长期记忆检索信息
 """
         
         # 配置规划器和修复器
@@ -212,11 +429,18 @@ class ManagedAgent:
         )
         remediator = DefaultRemediator(model)
         
+        # 添加所有自定义工具
+        from dare_framework.knowledge._internal.knowledge_tools import KnowledgeAddTool, KnowledgeGetTool
+        
         builder = DareAgentBuilder("time-service-agent")\
             .with_model(model)\
             .with_short_term_memory(stm)\
             .with_long_term_memory(ltm)\
-            .add_tools(GetCurrentTimeTool())
+            .add_tools(GetCurrentTimeTool())\
+            .add_tools(GetSystemInfoTool())\
+            .add_tools(CalculateDateDiffTool())\
+            .add_tools(KnowledgeAddTool(ltm))\
+            .add_tools(KnowledgeGetTool(ltm))
         
         # 添加技能检索工具（如果有技能）
         if self.skill_store and len(self.skill_store.list_skills()) > 0:
