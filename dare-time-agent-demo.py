@@ -471,12 +471,21 @@ class ManagedAgent:
     
     async def reload_skills(self) -> Dict[str, Any]:
         """动态重新加载 Skills"""
-        loader = FileSystemSkillLoader()
-        self.skill_store = SkillStore([loader])
+        # SkillStore 原生自带 reload 方法，直接调用重新从文件系统加载
+        self.skill_store.reload()
         all_skills = self.skill_store.list_skills()
         
-        # 重新构建 Agent（这里简化处理，实际生产中可以更优雅）
-        # 因为工具已经注册，只需要更新 skill store
+        # 需要更新 Agent 中的 SearchSkillTool，因为它持有旧的 skill_store 引用
+        if self.agent and self.skill_store:
+            # 移除旧的 SearchSkillTool 工具
+            self.agent.tool_registry.tools = [
+                t for t in self.agent.tool_registry.tools 
+                if t.id != "search_skill"
+            ]
+            # 添加新的 SearchSkillTool，使用更新后的 skill_store
+            from dare_framework.skill._internal.search_skill_tool import SearchSkillTool
+            self.agent.tool_registry.add_tool(SearchSkillTool(self.skill_store))
+        
         return {
             "status": "ok",
             "loaded_skills": len(all_skills),
